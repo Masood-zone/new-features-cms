@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const BASE_URL = "https://hemjoha-canteen-management-system.onrender.com/api";
+
 export const apiClient = axios.create({
-  baseURL: "https://try.hemjoha.xyz/api",
+  baseURL: BASE_URL,
   // baseURL: "http://localhost:3400",
   headers: {
     "Access-Control-Allow-Origin": "*",
