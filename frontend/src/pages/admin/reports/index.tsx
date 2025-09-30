@@ -22,6 +22,7 @@ import {
   usePaidReportByClass,
   useUnpaidReportByClass,
 } from "@/services/api/reports/reports.queries";
+import { Label } from "@/components/ui/label";
 
 export default function ReportsPage() {
   const { data: classes } = useFetchClasses();
@@ -45,80 +46,113 @@ export default function ReportsPage() {
   const onPrint = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const w = window.open("", "PRINT", "height=600,width=800");
-    if (!w) return;
-    w.document.write(
-      `<html><head><title>Report</title></head><body>${el.innerHTML}</body></html>`
+    const w = window.open(
+      "",
+      "_blank",
+      "noopener,noreferrer,width=900,height=700"
     );
+    if (!w) return;
+    const content = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Report</title>
+          <style>
+            body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; }
+            h1 { font-size: 18px; margin: 0 0 12px; }
+            .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
+          </style>
+        </head>
+        <body>
+          ${el.innerHTML}
+          <script>
+            window.addEventListener('load', function(){
+              setTimeout(function(){ window.print(); }, 100);
+            });
+          </script>
+        </body>
+      </html>`;
+    w.document.open();
+    w.document.write(content);
     w.document.close();
     w.focus();
-    w.print();
-    w.close();
   };
 
   return (
     <section className="container p-4">
       <h1 className="text-2xl font-semibold mb-4">Reports</h1>
-      <div className="flex flex-wrap gap-3 items-center mb-4">
-        <Select onValueChange={(v) => setClassId(Number(v))}>
-          <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Select class" />
-          </SelectTrigger>
-          <SelectContent>
-            {classes?.map((c: Class) => (
-              <SelectItem key={c.id} value={String(c.id)}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[200px] justify-start",
-                !from && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {from ? format(from, "PPP") : "From date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={from}
-              onSelect={(d) => d && setFrom(d)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[200px] justify-start",
-                !to && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {to ? format(to, "PPP") : "To date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={to}
-              onSelect={(d) => d && setTo(d)}
-              disabled={(d) =>
-                !!from && d < new Date(new Date(from).setHours(0, 0, 0, 0))
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+      <div className="flex flex-wrap gap-4 items-end mb-4">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="report-class">Class</Label>
+          <Select onValueChange={(v) => setClassId(Number(v))}>
+            <SelectTrigger id="report-class" className="w-[240px]">
+              <SelectValue placeholder="Select class" />
+            </SelectTrigger>
+            <SelectContent>
+              {classes?.map((c: Class) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="report-from">From</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[200px] justify-start",
+                  !from && "text-muted-foreground"
+                )}
+                id="report-from"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {from ? format(from, "PPP") : "From date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={from}
+                onSelect={(d) => d && setFrom(d)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="report-to">To</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[200px] justify-start",
+                  !to && "text-muted-foreground"
+                )}
+                id="report-to"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {to ? format(to, "PPP") : "To date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={to}
+                onSelect={(d) => d && setTo(d)}
+                disabled={(d) =>
+                  !!from && d < new Date(new Date(from).setHours(0, 0, 0, 0))
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <Tabs defaultValue="paid" className="w-full">
