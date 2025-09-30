@@ -407,6 +407,7 @@ const rootRoutes = createBrowserRouter(
             }}
           />
         </Route>
+
         {/* Expenses */}
         <Route
           path="accounts"
@@ -460,6 +461,26 @@ const rootRoutes = createBrowserRouter(
                 "@/pages/admin/expenses/overall/overall.tsx"
               );
               return { Component: OverallTotals };
+            }}
+          />
+        </Route>
+        {/* Reports */}
+        <Route
+          path="reports"
+          lazy={async () => {
+            const { default: ReportsLayout } = await import(
+              "@/pages/admin/reports"
+            );
+            return { Component: ReportsLayout };
+          }}
+        >
+          <Route
+            index
+            lazy={async () => {
+              const { default: Reports } = await import(
+                "@/pages/admin/reports/index.tsx"
+              );
+              return { Component: Reports };
             }}
           />
         </Route>

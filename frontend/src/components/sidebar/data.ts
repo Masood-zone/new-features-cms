@@ -64,6 +64,10 @@ export const super_nav = {
           title: "Accounts",
           url: "/admin/accounts",
         },
+        {
+          title: "Reports",
+          url: "/admin/reports",
+        },
       ],
     },
     {

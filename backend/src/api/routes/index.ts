@@ -11,6 +11,7 @@ import { expenseRoutes } from "./expense-routes";
 import { referenceRoutes } from "./reference-routes";
 import { analyticsRoutes } from "./analytics-routes";
 import { prepaymentRoutes } from "./prepayment-routes";
+import { reportsRoutes } from "./reports-routes";
 
 export const setupRoutes = (app: Express) => {
   app.use("/auth", authRoutes);
@@ -25,4 +26,5 @@ export const setupRoutes = (app: Express) => {
   app.use("/references", referenceRoutes);
   app.use("/analytics", analyticsRoutes);
   app.use("/prepayments", prepaymentRoutes);
+  app.use("/reports", reportsRoutes);
 };
