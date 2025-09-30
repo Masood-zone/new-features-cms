@@ -23,6 +23,12 @@ import {
   useUnpaidReportByClass,
 } from "@/services/api/reports/reports.queries";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/assets";
+import { printReport } from "@/components/print/print-report";
+import type {
+  ClassPaidReport,
+  ClassUnpaidReport,
+} from "@/services/api/reports/reports.api";
 
 export default function ReportsPage() {
   const { data: classes } = useFetchClasses();
@@ -43,40 +49,17 @@ export default function ReportsPage() {
     params
   );
 
-  const onPrint = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const w = window.open(
-      "",
-      "_blank",
-      "noopener,noreferrer,width=900,height=700"
-    );
-    if (!w) return;
-    const content = `<!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Report</title>
-          <style>
-            body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; }
-            h1 { font-size: 18px; margin: 0 0 12px; }
-            .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
-          </style>
-        </head>
-        <body>
-          ${el.innerHTML}
-          <script>
-            window.addEventListener('load', function(){
-              setTimeout(function(){ window.print(); }, 100);
-            });
-          </script>
-        </body>
-      </html>`;
-    w.document.open();
-    w.document.write(content);
-    w.document.close();
-    w.focus();
+  const onPrint = (type: "paid" | "unpaid") => {
+    printReport({
+      type,
+      logoSrc: Logo,
+      classId,
+      classes: classes as Class[] | undefined,
+      paid: paid as ClassPaidReport | undefined,
+      unpaid: unpaid as ClassUnpaidReport | undefined,
+      from: from,
+      to: to,
+    });
   };
 
   return (
@@ -162,7 +145,7 @@ export default function ReportsPage() {
         </TabsList>
         <TabsContent value="paid">
           <div className="flex justify-end mb-2">
-            <Button size="sm" onClick={() => onPrint("paid-report-root")}>
+            <Button size="sm" onClick={() => onPrint("paid")}>
               <Printer className="mr-2 h-4 w-4" /> Print
             </Button>
           </div>
@@ -194,7 +177,7 @@ export default function ReportsPage() {
         </TabsContent>
         <TabsContent value="unpaid">
           <div className="flex justify-end mb-2">
-            <Button size="sm" onClick={() => onPrint("unpaid-report-root")}>
+            <Button size="sm" onClick={() => onPrint("unpaid")}>
               <Printer className="mr-2 h-4 w-4" /> Print
             </Button>
           </div>
