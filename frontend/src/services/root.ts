@@ -3,8 +3,8 @@ import axios from "axios";
 const BASE_URL = "https://hemjoha-canteen-management-system.onrender.com";
 
 export const apiClient = axios.create({
-  // baseURL: BASE_URL,
-  baseURL: "http://localhost:3400",
+  baseURL: BASE_URL,
+  // baseURL: "http://localhost:3400",
   headers: {
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json",

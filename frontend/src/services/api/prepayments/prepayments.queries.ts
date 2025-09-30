@@ -126,7 +126,7 @@ export const useCreatePrepayment = () => {
       toast.success("Prepayment created successfully!");
       queryClient.invalidateQueries({ queryKey: ["prepayments"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error(error);
       const message =
         error?.response?.data?.message || "Failed to create prepayment.";
