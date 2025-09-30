@@ -39,7 +39,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useFetchClasses } from "@/services/api/classes/classes.queries";
-import { useFetchOwingStudentsByClass } from "@/services/api/students/students.queries";
+import {
+  useFetchAllOwingStudents,
+  useFetchOwingStudentsByClass,
+} from "@/services/api/students/students.queries";
 
 // Define the Student type
 interface Student {
@@ -65,18 +68,23 @@ export default function Owings() {
   const navigate = useNavigate();
 
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
-  const { data: owingStudents, isLoading: owingLoading } =
-    useFetchOwingStudentsByClass(
-      selectedClassId ? Number.parseInt(selectedClassId) : undefined
-    );
+  // Fetch global/admin-wide owing students list
+  const { data: allOwing, isLoading: allOwingLoading } =
+    useFetchAllOwingStudents();
+  // Fetch class-specific owing only when a class is chosen
+  const classIdNum =
+    selectedClassId !== "all" ? Number.parseInt(selectedClassId) : undefined;
+  const { data: classOwing, isLoading: classOwingLoading } =
+    useFetchOwingStudentsByClass(classIdNum);
 
   const handleViewDetails = (studentId: number) => {
     navigate(`/admin/owings/${studentId}`);
   };
 
   // Filter students based on search query
+  const source = selectedClassId === "all" ? allOwing : classOwing;
   const filteredStudents =
-    owingStudents?.owingStudents?.filter(
+    source?.owingStudents?.filter(
       (student: Student) =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.class?.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -113,10 +121,10 @@ export default function Owings() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ₵{owingStudents?.totalOwing?.toFixed(2) || "0.00"}
+              ₵{source?.totalOwing?.toFixed(2) || "0.00"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              From {owingStudents?.count || 0} students
+              From {source?.count || 0} students
             </p>
           </CardContent>
         </Card>
@@ -128,9 +136,7 @@ export default function Owings() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              {owingStudents?.count || 0}
-            </div>
+            <div className="text-3xl font-bold">{source?.count || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {selectedClassId !== "all"
                 ? "In selected class"
@@ -148,8 +154,8 @@ export default function Owings() {
           <CardContent>
             <div className="text-3xl font-bold">
               ₵
-              {owingStudents?.count
-                ? (owingStudents.totalOwing / owingStudents.count).toFixed(2)
+              {source?.count
+                ? (source.totalOwing / source.count).toFixed(2)
                 : "0.00"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Per student</p>
@@ -211,7 +217,7 @@ export default function Owings() {
         </DropdownMenu>
       </div>
 
-      {classesLoading || owingLoading ? (
+      {classesLoading || allOwingLoading || classOwingLoading ? (
         <TableSkeleton />
       ) : (
         <div className="rounded-md border shadow-sm overflow-hidden">
@@ -289,8 +295,7 @@ export default function Owings() {
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Showing <strong>{filteredStudents.length}</strong> of{" "}
-            <strong>{owingStudents?.owingStudents?.length || 0}</strong>{" "}
-            students
+            <strong>{source?.owingStudents?.length || 0}</strong> students
           </p>
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" disabled>

@@ -32,13 +32,14 @@ export const fetchStudentsInClass = async (id: number) => {
   return response.data;
 };
 
-// Fetch owing students by class
-export const fetchOwingStudentsByClass = async (classId?: number) => {
-  if (classId !== undefined) {
-    const response = await apiClient.get(`/students/class/${classId}/owing`);
-    return response.data;
-  } else {
-    const response = await apiClient.get("/admins/owing-students");
-    return response.data;
-  }
+// Fetch owing students by class (requires a valid classId)
+export const fetchOwingStudentsByClass = async (classId: number) => {
+  const response = await apiClient.get(`/students/class/${classId}/owing`);
+  return response.data;
+};
+
+// Fetch all owing students (admin overview)
+export const fetchAllOwingStudents = async () => {
+  const response = await apiClient.get("/admins/owing-students");
+  return response.data;
 };

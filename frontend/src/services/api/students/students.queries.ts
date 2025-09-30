@@ -8,6 +8,7 @@ import {
   deleteStudent,
   fetchStudentsInClass,
   fetchOwingStudentsByClass,
+  fetchAllOwingStudents,
 } from "./students.api";
 import { useNavigate } from "react-router-dom";
 
@@ -98,11 +99,23 @@ export const useFetchStudentsInClass = (id: number) => {
 export const useFetchOwingStudentsByClass = (classId?: number) => {
   return useQuery({
     queryKey: ["owingStudentsByClass", classId],
-    queryFn: () => fetchOwingStudentsByClass(classId),
-    enabled: classId !== undefined,
+    // Only run when a valid classId number is provided
+    enabled: typeof classId === "number" && !Number.isNaN(classId),
+    queryFn: () => fetchOwingStudentsByClass(classId as number),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch owing students for this class.");
+    },
+  });
+};
+
+export const useFetchAllOwingStudents = () => {
+  return useQuery({
+    queryKey: ["allOwingStudents"],
+    queryFn: fetchAllOwingStudents,
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch owing students.");
     },
   });
 };
