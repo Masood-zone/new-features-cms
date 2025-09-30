@@ -8,7 +8,7 @@ export const fetchRecordsAmount = async () => {
 
 // Get preset amount
 export const getPresetAmount = async () => {
-  const response = await apiClient.get("/preset-amount");
+  const response = await apiClient.get("/settings/amount");
   return response.data;
 };
 

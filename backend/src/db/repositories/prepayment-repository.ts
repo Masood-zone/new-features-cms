@@ -1,5 +1,5 @@
-import { prisma } from "../client"
-import type { Prisma } from "@prisma/client"
+import { prisma } from "../client";
+import type { Prisma } from "@prisma/client";
 
 export const prepaymentRepository = {
   findAll: async () => {
@@ -18,7 +18,7 @@ export const prepaymentRepository = {
       orderBy: {
         createdAt: "desc",
       },
-    })
+    });
   },
 
   findById: async (id: number) => {
@@ -35,7 +35,7 @@ export const prepaymentRepository = {
           },
         },
       },
-    })
+    });
   },
 
   findByStudentId: async (studentId: number) => {
@@ -55,7 +55,7 @@ export const prepaymentRepository = {
       orderBy: {
         createdAt: "desc",
       },
-    })
+    });
   },
 
   findByClassId: async (classId: number) => {
@@ -75,7 +75,7 @@ export const prepaymentRepository = {
       orderBy: {
         createdAt: "desc",
       },
-    })
+    });
   },
 
   findActiveByStudentId: async (studentId: number, currentDate: Date) => {
@@ -97,7 +97,31 @@ export const prepaymentRepository = {
       orderBy: {
         endDate: "desc",
       },
-    })
+    });
+  },
+
+  // Find any active prepayments that overlap a given date range for a student
+  findOverlappingByStudentId: async (
+    studentId: number,
+    start: Date,
+    end: Date
+  ) => {
+    return prisma.prepayment.findMany({
+      where: {
+        studentId,
+        isActive: true,
+        // overlap condition: existing.start <= new.end AND existing.end >= new.start
+        startDate: { lte: end },
+        endDate: { gte: start },
+      },
+      include: {
+        student: true,
+        class: true,
+      },
+      orderBy: {
+        startDate: "asc",
+      },
+    });
   },
 
   findActiveByClassId: async (classId: number, currentDate: Date) => {
@@ -121,7 +145,7 @@ export const prepaymentRepository = {
           name: "asc",
         },
       },
-    })
+    });
   },
 
   findExpiredPrepayments: async (currentDate: Date) => {
@@ -136,7 +160,7 @@ export const prepaymentRepository = {
         student: true,
         class: true,
       },
-    })
+    });
   },
 
   create: async (data: Prisma.PrepaymentCreateInput) => {
@@ -153,7 +177,7 @@ export const prepaymentRepository = {
           },
         },
       },
-    })
+    });
   },
 
   update: async (id: number, data: Prisma.PrepaymentUpdateInput) => {
@@ -171,13 +195,13 @@ export const prepaymentRepository = {
           },
         },
       },
-    })
+    });
   },
 
   delete: async (id: number) => {
     return prisma.prepayment.delete({
       where: { id },
-    })
+    });
   },
 
   deactivateExpired: async (currentDate: Date) => {
@@ -191,16 +215,16 @@ export const prepaymentRepository = {
       data: {
         isActive: false,
       },
-    })
+    });
   },
 
   // Get students with active prepayments for a specific date
   getStudentsWithActivePrepayments: async (classId: number, date: Date) => {
-    const startOfDay = new Date(date)
-    startOfDay.setHours(0, 0, 0, 0)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date(date)
-    endOfDay.setHours(23, 59, 59, 999)
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
     return prisma.prepayment.findMany({
       where: {
@@ -217,6 +241,6 @@ export const prepaymentRepository = {
         student: true,
       },
       distinct: ["studentId"],
-    })
+    });
   },
-}
+};

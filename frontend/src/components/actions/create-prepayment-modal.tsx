@@ -38,27 +38,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useCreatePrepayment } from "@/services/api/prepayments/prepayments.queries";
 
-const formSchema = z.object({
-  studentId: z.string().min(1, "Please select a student"),
-  amount: z
-    .string()
-    .min(1, "Amount is required")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-      message: "Amount must be a positive number",
+const formSchema = z
+  .object({
+    studentId: z.string().min(1, "Please select a student"),
+    amount: z
+      .string()
+      .min(1, "Amount is required")
+      .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+        message: "Amount must be a positive number",
+      }),
+    startDate: z.date({
+      required_error: "Start date is required",
     }),
-  durationType: z.enum(["days", "weeks", "months"], {
-    required_error: "Please select a duration type",
-  }),
-  durationValue: z
-    .string()
-    .min(1, "Duration value is required")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-      message: "Duration value must be a positive number",
+    endDate: z.date({
+      required_error: "End date is required",
     }),
-  startDate: z.date({
-    required_error: "Start date is required",
-  }),
-});
+  })
+  .refine((data) => data.endDate >= data.startDate, {
+    message: "End date must be on or after start date",
+    path: ["endDate"],
+  });
 
 interface CreatePrepaymentModalProps {
   open: boolean;
@@ -83,9 +82,8 @@ export function CreatePrepaymentModal({
     defaultValues: {
       studentId: "",
       amount: "",
-      durationType: "days",
-      durationValue: "",
       startDate: new Date(),
+      endDate: new Date(),
     },
   });
 
@@ -95,9 +93,8 @@ export function CreatePrepaymentModal({
         studentId: Number(values.studentId),
         classId,
         amount: Number(values.amount),
-        durationType: values.durationType,
-        durationValue: Number(values.durationValue),
         startDate: values.startDate.toISOString(),
+        endDate: values.endDate.toISOString(),
       },
       {
         onSuccess: () => {
@@ -107,31 +104,6 @@ export function CreatePrepaymentModal({
       }
     );
   };
-
-  const calculateEndDate = () => {
-    const startDate = form.watch("startDate");
-    const durationType = form.watch("durationType");
-    const durationValue = Number(form.watch("durationValue"));
-
-    if (!startDate || !durationType || !durationValue) return null;
-
-    const endDate = new Date(startDate);
-    switch (durationType) {
-      case "days":
-        endDate.setDate(startDate.getDate() + durationValue);
-        break;
-      case "weeks":
-        endDate.setDate(startDate.getDate() + durationValue * 7);
-        break;
-      case "months":
-        endDate.setMonth(startDate.getMonth() + durationValue);
-        break;
-    }
-
-    return endDate;
-  };
-
-  const endDate = calculateEndDate();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,54 +168,6 @@ export function CreatePrepaymentModal({
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="durationType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="days">Days</SelectItem>
-                        <SelectItem value="weeks">Weeks</SelectItem>
-                        <SelectItem value="months">Months</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="durationValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter value"
-                        type="number"
-                        min="1"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
               name="startDate"
@@ -254,6 +178,7 @@ export function CreatePrepaymentModal({
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
+                          type="button"
                           variant={"outline"}
                           className={cn(
                             "w-full pl-3 text-left font-normal",
@@ -274,9 +199,6 @@ export function CreatePrepaymentModal({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
                         initialFocus
                       />
                     </PopoverContent>
@@ -286,15 +208,56 @@ export function CreatePrepaymentModal({
               )}
             />
 
-            {endDate && (
+            <FormField
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>End Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          type="button"
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch("endDate") && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm text-muted-foreground">
-                  <strong>End Date:</strong> {format(endDate, "PPP")}
+                  <strong>End Date:</strong>{" "}
+                  {format(form.watch("endDate"), "PPP")}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   This prepayment will be active from{" "}
                   {format(form.watch("startDate"), "PPP")} to{" "}
-                  {format(endDate, "PPP")}
+                  {format(form.watch("endDate"), "PPP")}
                 </p>
               </div>
             )}

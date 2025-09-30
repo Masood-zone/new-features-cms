@@ -6,17 +6,15 @@ export interface CreatePrepaymentData {
   studentId: number;
   classId: number;
   amount: number;
-  durationType: "days" | "weeks" | "months";
-  durationValue: number;
   startDate: string;
+  endDate: string;
   createdBy: number;
 }
 
 export interface UpdatePrepaymentData {
   amount?: number;
-  durationType?: "days" | "weeks" | "months";
-  durationValue?: number;
   startDate?: string;
+  endDate?: string;
   isActive?: boolean;
 }
 
@@ -52,61 +50,33 @@ export const prepaymentService = {
   },
 
   createPrepayment: async (data: CreatePrepaymentData) => {
-    const {
-      studentId,
-      classId,
-      amount,
-      durationType,
-      durationValue,
-      startDate,
-      createdBy,
-    } = data;
+    const { studentId, classId, amount, startDate, endDate, createdBy } = data;
 
     // Validate input
     if (amount <= 0) {
       throw new ApiError(400, "Amount must be greater than zero");
     }
 
-    if (durationValue <= 0) {
-      throw new ApiError(400, "Duration value must be greater than zero");
-    }
-
-    if (!["days", "weeks", "months"].includes(durationType)) {
-      throw new ApiError(
-        400,
-        "Duration type must be 'days', 'weeks', or 'months'"
-      );
-    }
-
-    // Calculate end date based on duration
+    // Validate dates
     const start = new Date(startDate);
-    const end = new Date(start);
-
-    switch (durationType) {
-      case "days":
-        end.setDate(start.getDate() + durationValue);
-        break;
-      case "weeks":
-        end.setDate(start.getDate() + durationValue * 7);
-        break;
-      case "months":
-        end.setMonth(start.getMonth() + durationValue);
-        break;
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new ApiError(400, "Invalid start or end date");
     }
-
-    // Set end date to end of day
+    if (end < start) {
+      throw new ApiError(400, "End date must be after start date");
+    }
+    // Normalize end to end of day
     end.setHours(23, 59, 59, 999);
 
     // Check for overlapping active prepayments
     const existingPrepayments =
-      await prepaymentRepository.findActiveByStudentId(studentId, start);
-
-    const hasOverlap = existingPrepayments.some((prepayment) => {
-      const existingStart = new Date(prepayment.startDate);
-      const existingEnd = new Date(prepayment.endDate);
-
-      return start <= existingEnd && end >= existingStart;
-    });
+      await prepaymentRepository.findOverlappingByStudentId(
+        studentId,
+        start,
+        end
+      );
+    const hasOverlap = existingPrepayments.length > 0;
 
     if (hasOverlap) {
       throw new ApiError(
@@ -115,12 +85,17 @@ export const prepaymentService = {
       );
     }
 
+    // Derive duration fields for backward compatibility (store as days)
+    const msInDay = 1000 * 60 * 60 * 24;
+    const rawDays = Math.ceil((end.getTime() - start.getTime()) / msInDay);
+    const durationValue = Math.max(1, rawDays);
+
     return prepaymentRepository.create({
       student: { connect: { id: studentId } },
       class: { connect: { id: classId } },
       creator: { connect: { id: createdBy } },
       amount,
-      durationType,
+      durationType: "days",
       durationValue,
       startDate: start,
       endDate: end,
@@ -134,34 +109,45 @@ export const prepaymentService = {
     }
 
     const updateData: any = { ...data };
-
-    // If duration or start date is being updated, recalculate end date
-    if (data.durationType || data.durationValue || data.startDate) {
-      const durationType = data.durationType || existingPrepayment.durationType;
-      const durationValue =
-        data.durationValue || existingPrepayment.durationValue;
-      const startDate = data.startDate
+    // If dates are being updated, normalize and validate
+    if (data.startDate || data.endDate) {
+      const start = data.startDate
         ? new Date(data.startDate)
-        : existingPrepayment.startDate;
-
-      const endDate = new Date(startDate);
-      switch (durationType) {
-        case "days":
-          endDate.setDate(startDate.getDate() + durationValue);
-          break;
-        case "weeks":
-          endDate.setDate(startDate.getDate() + durationValue * 7);
-          break;
-        case "months":
-          endDate.setMonth(startDate.getMonth() + durationValue);
-          break;
+        : new Date(existingPrepayment.startDate);
+      const end = data.endDate
+        ? new Date(data.endDate)
+        : new Date(existingPrepayment.endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new ApiError(400, "Invalid start or end date");
       }
-      endDate.setHours(23, 59, 59, 999);
-
-      updateData.endDate = endDate;
-      if (data.startDate) {
-        updateData.startDate = startDate;
+      if (end < start) {
+        throw new ApiError(400, "End date must be after start date");
       }
+      end.setHours(23, 59, 59, 999);
+
+      // Ensure no overlapping ranges with other active prepayments for this student
+      const overlaps = await prepaymentRepository.findOverlappingByStudentId(
+        existingPrepayment.studentId,
+        start,
+        end
+      );
+      const otherOverlaps = overlaps.filter(
+        (p) => p.id !== existingPrepayment.id
+      );
+      if (otherOverlaps.length > 0) {
+        throw new ApiError(
+          400,
+          "Student already has an active prepayment that overlaps this period"
+        );
+      }
+      // Derive and set duration fields for backward compatibility
+      const msInDay = 1000 * 60 * 60 * 24;
+      const rawDays = Math.ceil((end.getTime() - start.getTime()) / msInDay);
+      const durationValue = Math.max(1, rawDays);
+      updateData.startDate = start;
+      updateData.endDate = end;
+      updateData.durationType = "days";
+      updateData.durationValue = durationValue;
     }
 
     return prepaymentRepository.update(id, updateData);

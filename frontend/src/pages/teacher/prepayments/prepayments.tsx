@@ -112,10 +112,10 @@ export default function TeacherPrepayments() {
 
   const getDurationText = (prepayment?: PrepaymentStatus) => {
     if (!prepayment) return "";
-
-    const { durationType, durationValue } = prepayment;
-    const unit = durationValue === 1 ? durationType.slice(0, -1) : durationType;
-    return `${durationValue} ${unit}`;
+    return `${format(new Date(prepayment.startDate), "PPP")} - ${format(
+      new Date(prepayment.endDate),
+      "PPP"
+    )}`;
   };
 
   const getRemainingDays = (endDate: string) => {
