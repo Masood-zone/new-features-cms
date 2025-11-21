@@ -20,11 +20,7 @@ export const setupDailyRecordCreation = () => {
         include: { students: true },
       });
 
-      const settings = await prisma.settings.findFirst({
-        where: { name: "amount" },
-      });
-
-      const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+      // Use per-class canteen price instead of global settings
 
       let createdRecords = 0;
       let skippedRecords = 0;
@@ -58,7 +54,7 @@ export const setupDailyRecordCreation = () => {
                 hasPaid: false,
                 isPrepaid: false,
                 isAbsent: false,
-                settingsAmount,
+                settingsAmount: classItem.canteenPrice || 0,
                 submitedBy: classItem.supervisorId || classItem.id,
                 // Add the owing fields
                 owingBefore: currentOwing,

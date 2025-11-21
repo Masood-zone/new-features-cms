@@ -19,6 +19,7 @@ interface User {
       name: string;
       description: string;
       supervisorId: number;
+      canteenPrice?: number;
     };
   };
 }
@@ -111,6 +112,7 @@ type Class = {
   class_teacher?: {
     name: string;
   };
+  canteenPrice?: number;
 };
 
 interface AuthStore {

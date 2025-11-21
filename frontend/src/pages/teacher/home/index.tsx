@@ -1,7 +1,6 @@
 import { ProfessionalAnalyticsCard } from "@/components/shared/cards/analytic-cards";
 import { CardsSkeleton } from "@/components/shared/page-loader/loaders";
 import { useTeacherAnalytics } from "@/services/api/analytics/analytics.queries";
-import { useFetchRecordsAmount } from "@/services/api/settings/settings.queries";
 
 import { useAuthStore } from "@/store/authStore";
 import { CurrencyIcon, UserCheck, Users, UserX } from "lucide-react";
@@ -9,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 
 export default function TeacherHome() {
   const { user, assigned_class } = useAuthStore();
-  const { data: price, error: canteenPriceError } = useFetchRecordsAmount();
   const {
     data: analytics,
     isLoading,
@@ -27,17 +25,12 @@ export default function TeacherHome() {
             <span className="font-bold">{assigned_class?.name}</span> class.
           </p>
         </div>
-        <div className="">
-          <h2 className="w-full">
-            Canteen Price
-            {Boolean(canteenPriceError) && (
-              <p className="text-red-500">Error fetching canteen price</p>
-            )}
-            <span className="text-2xl font-bold text-primary text-center px-2">
-              Gh₵{price?.data?.value || 0}
-            </span>
-          </h2>
-          <p>This is the current price of the canteen.</p>
+        <div>
+          <h2 className="w-full">Canteen Price</h2>
+          <span className="text-2xl font-bold text-primary text-center px-2">
+            Gh₵{analytics?.canteenPrice || 0}
+          </span>
+          <p>Current price for this class.</p>
         </div>
       </div>
       {/* Analytics */}

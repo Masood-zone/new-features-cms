@@ -44,6 +44,7 @@ model Class {
   name         String    @unique // Ensure class names are unique
   description  String?
   supervisorId Int?      @unique // Each class can have one unique supervisor
+  canteenPrice Int       @default(0) // Per-class canteen amount (replaces global setting for records)
   
   // Relations
   records      Record[]     // One-to-many relation with Record

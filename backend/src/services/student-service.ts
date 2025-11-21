@@ -140,11 +140,11 @@ export const studentService = {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get settings amount for reference
-    const settings = await prisma.settings.findFirst({
-      where: { name: "amount" },
-    });
-    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+    // Use per-class canteen price instead of global settings amount
+    const classEntity = student.classId
+      ? await prisma.class.findUnique({ where: { id: student.classId } })
+      : null;
+    const settingsAmount = classEntity?.canteenPrice || 0;
 
     // Check if there's already a record for today
     const existingRecord = await prisma.record.findFirst({

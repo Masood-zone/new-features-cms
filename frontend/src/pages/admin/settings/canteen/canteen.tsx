@@ -27,6 +27,8 @@ import {
   useFetchRecordsAmount,
   useUpdateRecordsAmount,
 } from "@/services/api/settings/settings.queries";
+import { useFetchClasses } from "@/services/api/classes/classes.queries";
+import { useUpdateClassCanteenPrice } from "@/services/api/classes/classes.queries";
 
 export default function Canteen() {
   const { mutate: createRecordsAmount, isLoading: creatingPriceLoader } =
@@ -34,6 +36,13 @@ export default function Canteen() {
   const { mutate: updateRecordsAmount, isLoading: updatingPriceLoader } =
     useUpdateRecordsAmount();
   const { data: amountSetting, isLoading, error } = useFetchRecordsAmount();
+  const { data: classesData } = useFetchClasses();
+  const { mutate: updateClassPrice, isLoading: updatingClassPrice } =
+    useUpdateClassCanteenPrice();
+
+  const [classPriceDrafts, setClassPriceDrafts] = useState<
+    Record<number, string | number>
+  >({});
 
   // State for edit mode and input value
   const [isEditing, setIsEditing] = useState(false);
@@ -167,6 +176,79 @@ export default function Canteen() {
               </>
             )}
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Per-Class Canteen Pricing</CardTitle>
+          <CardDescription>
+            View and adjust canteen price per class.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!classesData ? (
+            <Skeleton className="h-32 w-full bg-muted/50" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-2 pr-4">Class</th>
+                    <th className="py-2 pr-4">Current Price (GH₵)</th>
+                    <th className="py-2 pr-4">New Price</th>
+                    <th className="py-2 pr-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classesData.map((cls: Class) => {
+                    const draftValue =
+                      classPriceDrafts[cls.id] ?? cls.canteenPrice ?? "";
+                    return (
+                      <tr key={cls.id} className="border-b last:border-0">
+                        <td className="py-2 pr-4 font-medium">{cls.name}</td>
+                        <td className="py-2 pr-4">{cls.canteenPrice ?? "—"}</td>
+                        <td className="py-2 pr-4">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={draftValue}
+                            onChange={(e) =>
+                              setClassPriceDrafts((prev) => ({
+                                ...prev,
+                                [cls.id]: e.target.value,
+                              }))
+                            }
+                            className="w-28"
+                          />
+                        </td>
+                        <td className="py-2 pr-4">
+                          <Button
+                            size="sm"
+                            disabled={updatingClassPrice || updatingClassPrice}
+                            onClick={() => {
+                              const val = Number(draftValue);
+                              if (isNaN(val) || val < 0) {
+                                toast.error(
+                                  "Enter a valid non-negative number"
+                                );
+                                return;
+                              }
+                              updateClassPrice({
+                                id: cls.id,
+                                canteenPrice: val,
+                              });
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

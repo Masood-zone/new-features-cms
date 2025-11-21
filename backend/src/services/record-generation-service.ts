@@ -25,11 +25,8 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
       return;
     }
 
-    const settings = await prisma.settings.findFirst({
-      where: { name: "amount" },
-    });
-
-    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+    // Use per-class canteen price instead of global setting
+    const settingsAmount = student.class.canteenPrice || 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -72,11 +69,7 @@ export const generateDailyRecords = async (options: {
   const formattedDate = new Date(date);
   formattedDate.setHours(0, 0, 0, 0);
 
-  // Get the settings amount
-  const settings = await prisma.settings.findFirst({
-    where: { name: "amount" },
-  });
-  const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+  // settings amount now per class, retrieved inside loop per class
 
   // Get classes based on the query
   const classes = classId
@@ -173,7 +166,7 @@ export const generateDailyRecords = async (options: {
             hasPaid: false,
             isPrepaid: false,
             isAbsent: false,
-            settingsAmount,
+            settingsAmount: classItem.canteenPrice || 0,
             submitedBy: classItem.supervisorId || 0,
             owingBefore: currentOwing,
             owingAfter: currentOwing, // Initially the same as owingBefore
