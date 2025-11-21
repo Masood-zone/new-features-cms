@@ -19,4 +19,8 @@ export const settingsController = {
     const result = await settingsService.updateAmount(value);
     res.status(200).json(result);
   }),
+  getClassPrices: catchAsync(async (_req: Request, res: Response) => {
+    const result = await settingsService.getClassPrices();
+    res.status(200).json(result);
+  }),
 };

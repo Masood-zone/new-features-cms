@@ -27,3 +27,15 @@ export const updateClass = async (data: Class) => {
   const response = await apiClient.put(`/classes/${data.id}`, data);
   return response.data;
 };
+
+// Update only canteen price for a class
+export const updateClassCanteenPrice = async (payload: {
+  id: number;
+  canteenPrice: number;
+}) => {
+  const response = await apiClient.patch(
+    `/classes/${payload.id}/canteen-price`,
+    { canteenPrice: payload.canteenPrice }
+  );
+  return response.data;
+};

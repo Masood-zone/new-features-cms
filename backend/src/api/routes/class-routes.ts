@@ -13,5 +13,6 @@ router.put("/:id", classController.update);
 router.delete("/:id", classController.delete);
 router.put("/:name/assign", classController.assignTeacher);
 router.get("/:id/supervisor", classController.getClassBySupervisorId);
+router.patch("/:id/canteen-price", classController.updateCanteenPrice);
 
 export const classRoutes = router;

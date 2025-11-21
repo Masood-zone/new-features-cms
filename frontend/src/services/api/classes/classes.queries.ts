@@ -5,6 +5,7 @@ import {
   fetchClass,
   createClass,
   updateClass,
+  updateClassCanteenPrice,
 } from "./classes.api";
 import { useNavigate } from "react-router-dom";
 
@@ -64,6 +65,23 @@ export const useUpdateClass = () => {
     onError: (error) => {
       console.error(error);
       toast.error("Failed to update class. Please try again.");
+    },
+  });
+};
+
+// Mutation: Update only the canteen price
+export const useUpdateClassCanteenPrice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateClassCanteenPrice,
+    onSuccess: () => {
+      toast.success("Canteen price updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to update canteen price.");
     },
   });
 };

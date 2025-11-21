@@ -46,4 +46,11 @@ export const classController = {
     const classItem = await classService.getClassBySupervisorId(id);
     res.json({ supervisor: classItem });
   }),
+
+  updateCanteenPrice: catchAsync(async (req: Request, res: Response) => {
+    const id = Number.parseInt(req.params.id);
+    const { canteenPrice } = req.body;
+    const updated = await classService.updateCanteenPrice(id, canteenPrice);
+    res.json({ message: "Canteen price updated", class: updated });
+  }),
 };

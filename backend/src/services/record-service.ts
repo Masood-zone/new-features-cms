@@ -1,5 +1,4 @@
 import { recordRepository } from "../db/repositories/record-repository";
-import { settingsRepository } from "../db/repositories/settings-repository";
 import { studentRepository } from "../db/repositories/student-repository";
 import { classRepository } from "../db/repositories/class-repository";
 import { Prisma } from "@prisma/client";
@@ -68,10 +67,7 @@ export const recordService = {
     const { classId, date } = options;
     const formattedDate = new Date(date);
     formattedDate.setHours(0, 0, 0, 0);
-
-    // Get the settings amount
-    const settings = await settingsRepository.findByName("amount");
-    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+    // settingsAmount now varies per class; use each class's canteenPrice
 
     // Get classes based on the query
     const classes = classId
@@ -84,9 +80,8 @@ export const recordService = {
     // Generate records for each student in each class
     for (const classItem of classes) {
       if (!classItem) continue;
-
+      const classPrice = classItem.canteenPrice || 0;
       const students = await studentRepository.findByClassId(classItem.id);
-
       for (const student of students) {
         try {
           const record = await recordRepository.create({
@@ -97,12 +92,11 @@ export const recordService = {
             hasPaid: false,
             isPrepaid: false,
             isAbsent: false,
-            settingsAmount,
+            settingsAmount: classPrice,
             teacher: { connect: { id: classItem.supervisorId || 0 } },
           });
           createdRecords.push(record);
         } catch (error) {
-          // If a record already exists for this student on this day, skip it
           if (
             (error as Prisma.PrismaClientKnownRequestError).code === "P2002"
           ) {
@@ -132,8 +126,8 @@ export const recordService = {
     try {
       const studentsInClass = await studentRepository.findByClassId(classId);
 
-      const settings = await settingsRepository.findByName("amount");
-      const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+      const classEntity = await classRepository.findById(classId);
+      const settingsAmount = classEntity?.canteenPrice || 0;
 
       const existingRecords = await recordRepository.findByClassAndDate(
         classId,
@@ -404,11 +398,9 @@ export const recordService = {
 
     const allStudents = [...unpaidStudents, ...paidStudents, ...absentStudents];
 
-    // Get settings amount for today
-    const settings = await prisma.settings.findFirst({
-      where: { name: "amount" },
-    });
-    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+    // Per-class price
+    const classEntity = await classRepository.findById(classId);
+    const settingsAmount = classEntity?.canteenPrice || 0;
 
     // Process each student record but don't update owing amounts yet
     const updatedRecords = [];
@@ -506,13 +498,8 @@ export const recordService = {
       throw new ApiError(404, "Student not found");
     }
 
-    // Get settings amount
-    const settings = await prisma.settings.findFirst({
-      where: { name: "amount" },
-    });
-    const settingsAmount = settings
-      ? Number.parseInt(settings.value)
-      : record.settingsAmount || 0;
+    // Use stored record.settingsAmount (already per-class) as source of truth
+    const settingsAmount = record.settingsAmount || 0;
 
     // Calculate the current owing amount
     const currentOwing = student.owing;
@@ -609,13 +596,8 @@ export const recordService = {
 
         const currentOwing = student.owing;
 
-        // Get settings amount
-        const settings = await tx.settings.findFirst({
-          where: { name: "amount" },
-        });
-        const settingsAmount = settings
-          ? Number.parseInt(settings.value)
-          : currentRecord.settingsAmount || 0;
+        // Use existing record.settingsAmount (per-class) to determine full payment
+        const settingsAmount = currentRecord.settingsAmount || 0;
 
         // Calculate amount paid
         let amountPaid = 0;

@@ -1,10 +1,15 @@
 import { settingsRepository } from "../db/repositories/settings-repository";
+import { prisma } from "../db/client";
 import { ApiError } from "../utils/api-error";
 
 export const settingsService = {
   getAmount: async () => {
     const setting = await settingsRepository.findByName("amount");
-    return { data: setting };
+    return {
+      data: setting,
+      deprecated: true,
+      message: "Global amount is deprecated. Use per-class canteenPrice.",
+    };
   },
 
   createAmount: async (value: string) => {
@@ -33,6 +38,18 @@ export const settingsService = {
       "amount",
       amount.toString()
     );
-    return { data: setting };
+    return {
+      data: setting,
+      deprecated: true,
+      message:
+        "Global amount updated but feature is deprecated. Prefer class canteenPrice.",
+    };
+  },
+  getClassPrices: async () => {
+    const classes = await prisma.class.findMany({
+      select: { id: true, name: true, canteenPrice: true },
+      orderBy: { name: "asc" },
+    });
+    return { data: classes };
   },
 };

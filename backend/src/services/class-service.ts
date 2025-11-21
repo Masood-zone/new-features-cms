@@ -19,8 +19,9 @@ export const classService = {
     name: string;
     description?: string;
     supervisorId?: number | string;
+    canteenPrice?: number | string;
   }) => {
-    const { name, description, supervisorId } = classData;
+    const { name, description, supervisorId, canteenPrice } = classData;
 
     return classRepository.create({
       name,
@@ -35,6 +36,12 @@ export const classService = {
             },
           }
         : undefined,
+      canteenPrice:
+        canteenPrice !== undefined
+          ? typeof canteenPrice === "string"
+            ? Number.parseInt(canteenPrice)
+            : canteenPrice
+          : undefined,
     });
   },
 
@@ -44,9 +51,10 @@ export const classService = {
       name?: string;
       description?: string;
       supervisorId?: number | string;
+      canteenPrice?: number | string;
     }
   ) => {
-    const { name, description, supervisorId } = classData;
+    const { name, description, supervisorId, canteenPrice } = classData;
 
     return classRepository.update(id, {
       name,
@@ -61,6 +69,12 @@ export const classService = {
             },
           }
         : undefined,
+      canteenPrice:
+        canteenPrice !== undefined
+          ? typeof canteenPrice === "string"
+            ? Number.parseInt(canteenPrice)
+            : canteenPrice
+          : undefined,
     });
   },
 
@@ -83,5 +97,13 @@ export const classService = {
 
   getClassBySupervisorId: async (supervisorId: number) => {
     return classRepository.findBySupervisorId(supervisorId);
+  },
+
+  updateCanteenPrice: async (id: number, price: number | string) => {
+    const numeric = typeof price === "string" ? Number.parseInt(price) : price;
+    if (isNaN(numeric) || numeric < 0) {
+      throw new ApiError(400, "Invalid canteen price");
+    }
+    return classRepository.update(id, { canteenPrice: numeric });
   },
 };

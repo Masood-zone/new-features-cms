@@ -9,5 +9,6 @@ router.use(authenticate);
 router.get("/amount", settingsController.getAmount);
 router.post("/amount", settingsController.createAmount);
 router.patch("/amount", settingsController.updateAmount);
+router.get("/class-prices", settingsController.getClassPrices);
 
 export const settingsRoutes = router;
